@@ -1,0 +1,14 @@
+import tweepy
+import os
+
+auth = tweepy.OAuth1UserHandler(
+    os.getenv("API_KEY"),
+    os.getenv("API_SECRET_KEY"),
+    os.getenv("ACCESS_TOKEN"),
+    os.getenv("ACCESS_TOKEN_SECRET")
+)
+
+api = tweepy.API(auth)
+
+# Test post
+api.update_status("Lunch is served. #KWFL 🍽️")
