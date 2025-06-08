@@ -3,15 +3,16 @@ import os
 import json
 import random
 
-client = tweepy.Client(
-    consumer_key=os.getenv("API_KEY"),
-    consumer_secret=os.getenv("API_SECRET"),
-    access_token=os.getenv("ACCESS_TOKEN"),
-    access_token_secret=os.getenv("ACCESS_SECRET")
+# Authenticate using OAuth 1.0a
+auth = tweepy.OAuth1UserHandler(
+    os.getenv("API_KEY"),
+    os.getenv("API_SECRET"),
+    os.getenv("ACCESS_TOKEN"),
+    os.getenv("ACCESS_SECRET")
 )
+api = tweepy.API(auth)
 
-bot_username = "kwflhellagoes"
-
+# KWFL bars
 kwfl_replies = [
     "Lunch don’t wait. Neither do I. 👑🍴 #KWFL",
     "Get that Big Fat Gyro and walk like a meal king. 💨 #KWFL",
@@ -38,6 +39,7 @@ kwfl_replies = [
     "You know it’s a good lunch if it needs two napkins and a recovery plan. 🧻💥 #KWFL"
 ]
 
+# Track already replied tweet IDs
 replied_file = 'replied_to.json'
 if os.path.exists(replied_file):
     with open(replied_file, 'r') as f:
@@ -45,27 +47,25 @@ if os.path.exists(replied_file):
 else:
     replied_to = set()
 
-me = client.get_user(username=bot_username).data.id
-mentions = client.get_users_mentions(id=me, max_results=10)
+# Get latest mentions
+mentions = api.mentions_timeline(count=10)
 
-if mentions.data:
-    for tweet in mentions.data:
-        tweet_id = str(tweet.id)
-        text_lower = tweet.text.lower()
+for tweet in mentions:
+    tweet_id = str(tweet.id)
+    if tweet_id in replied_to:
+        continue
+    if "kwfl" not in tweet.text.lower():
+        continue
 
-        if tweet_id in replied_to:
-            continue
-        if "kwfl" not in text_lower:
-            continue
+    try:
+        reply_text = f"@{tweet.user.screen_name} " + random.choice(kwfl_replies)
+        api.update_status(status=reply_text, in_reply_to_status_id=tweet.id)
+        print(f"✅ Replied to tweet ID: {tweet.id}")
+        replied_to.add(tweet_id)
+        break  # only reply to one per run
+    except Exception as e:
+        print(f"❌ Error replying to tweet ID {tweet.id}: {e}")
 
-        try:
-            response = random.choice(kwfl_replies)
-            client.create_tweet(in_reply_to_tweet_id=tweet.id, text=response)
-            print(f"✅ Replied to tweet ID: {tweet.id}")
-            replied_to.add(tweet_id)
-            break  # Only reply to one tweet per run
-        except Exception as e:
-            print(f"❌ Error replying to tweet ID {tweet.id}: {e}")
-
+# Save updated list
 with open(replied_file, 'w') as f:
     json.dump(list(replied_to), f)
