@@ -3,16 +3,11 @@ import os
 import json
 import random
 
-# Authenticate using tweepy.Client for v2 search (free-tier supported)
-client = tweepy.Client(
-    consumer_key=os.getenv("API_KEY"),
-    consumer_secret=os.getenv("API_SECRET"),
-    access_token=os.getenv("ACCESS_TOKEN"),
-    access_token_secret=os.getenv("ACCESS_SECRET")
-)
+# Authenticate using Bearer Token only
+client = tweepy.Client(bearer_token=os.getenv("BEARER_TOKEN"))
 
 # Search parameters
-query = '@kwflhellagoes kwfl -is:retweet'  # Look for mentions of the bot containing "kwfl"
+query = '@kwflhellagoes kwfl -is:retweet'
 
 # KWFL bars
 kwfl_replies = [
@@ -49,7 +44,7 @@ if os.path.exists(replied_file):
 else:
     replied_to = set()
 
-# Search recent tweets with "kwfl" mentioning @kwflhellagoes
+# Search recent tweets
 tweets = client.search_recent_tweets(query=query, max_results=10, tweet_fields=["author_id"])
 
 if tweets.data:
@@ -58,14 +53,10 @@ if tweets.data:
         if tweet_id in replied_to:
             continue
 
-        try:
-            reply_text = random.choice(kwfl_replies)
-            client.create_tweet(in_reply_to_tweet_id=tweet.id, text=reply_text)
-            print(f"✅ Replied to tweet ID: {tweet.id}")
-            replied_to.add(tweet_id)
-            break  # Only reply to one tweet per run
-        except Exception as e:
-            print(f"❌ Error replying to tweet ID {tweet.id}: {e}")
+        print(f"Found mention: {tweet.text}")
+        print("❌ Cannot reply using Bearer Token (read-only access)")
+        replied_to.add(tweet_id)
+        break
 
 with open(replied_file, 'w') as f:
     json.dump(list(replied_to), f)
