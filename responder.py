@@ -1,29 +1,50 @@
-name: KWFL Responder
+import tweepy
+import os
+import json
+import random
+from datetime import datetime
 
-on:
-  schedule:
-    - cron: "*/30 * * * *"  # every 30 minutes
-  workflow_dispatch:
+# Authenticate with Twitter
+client = tweepy.Client(
+    consumer_key=os.getenv("API_KEY"),
+    consumer_secret=os.getenv("API_SECRET"),
+    access_token=os.getenv("ACCESS_TOKEN"),
+    access_token_secret=os.getenv("ACCESS_SECRET")
+)
 
-jobs:
-  reply:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+# KWFL-style replies
+kwfl_replies = [
+    "Pulled up just in time, Lunch Time King. 🍽️ Get that big fat gyro, no crumbs left. #KWFL",
+    "Lunch bar coming in hot: Cane’s 3-Finger Combo, no slaw, extra toast. 🔥 #KWFL",
+    "Today feels like a CAVA bowl day. Build it like a verse — layered, bold, balanced. 🎤🥗 #KWFL",
+    "Posted at the Asian food court again. It’s tradition. 🍜👑 #KWFL",
+    "You already know, Lunch Time King — Double-Double plain with Animal Style fries. 🍔🍟 #KWFL"
+]
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
+# Track replies
+replied_file = 'replied_to.json'
+if os.path.exists(replied_file):
+    with open(replied_file, 'r') as f:
+        replied_to = set(json.load(f))
+else:
+    replied_to = set()
 
-      - name: Install dependencies
-        run: pip install tweepy python-dotenv
+# Search for tweets containing "what should I eat"
+query = '"what should I eat" -is:retweet -from:kwflhellagoes'
+tweets = client.search_recent_tweets(query=query, max_results=10, tweet_fields=["author_id", "created_at"])
 
-      - name: Run responder script
-        env:
-          API_KEY: ${{ secrets.API_KEY }}
-          API_SECRET: ${{ secrets.API_SECRET }}
-          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-          ACCESS_SECRET: ${{ secrets.ACCESS_SECRET }}
-        run: python responder.py
+if tweets.data:
+    for tweet in tweets.data:
+        if str(tweet.id) in replied_to:
+            continue
+        try:
+            reply_text = random.choice(kwfl_replies)
+            client.create_tweet(in_reply_to_tweet_id=tweet.id, text=reply_text)
+            print(f"✅ Replied to tweet ID {tweet.id}")
+            replied_to.add(str(tweet.id))
+        except Exception as e:
+            print(f"❌ Error replying to tweet ID {tweet.id}: {e}")
+
+# Save updated reply history
+with open(replied_file, 'w') as f:
+    json.dump(list(replied_to), f)
