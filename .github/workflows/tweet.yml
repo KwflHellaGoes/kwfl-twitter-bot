@@ -3,7 +3,7 @@ name: Tweet Every 3 Days
 on:
   schedule:
     - cron: '0 * * * *'  # Runs every hour
-  workflow_dispatch:      # Also allows manual runs
+  workflow_dispatch:
 
 jobs:
   tweet:
@@ -18,8 +18,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
       - name: Run bot randomly every 3 days
         env:
@@ -28,23 +27,17 @@ jobs:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
           ACCESS_SECRET: ${{ secrets.ACCESS_SECRET }}
         run: |
-          python -c "
-import os, random, datetime
-from subprocess import run
-
-now = datetime.datetime.utcnow()
-key = f'.last_tweet'
-should_run = True
-
-if os.path.exists(key):
-    with open(key) as f:
-        last = datetime.datetime.fromisoformat(f.read().strip())
-    delta = (now - last).days
-    should_run = delta >= 3
-
-if should_run:
-    if random.randint(0, 23) == now.hour:
-        run(['python', 'kwfl_bot.py'])
-        with open(key, 'w') as f:
-            f.write(now.isoformat())
-"
+          python -c "import os, random, datetime; from subprocess import run; \
+now = datetime.datetime.utcnow(); \
+key = '.last_tweet'; \
+should_run = True; \
+if os.path.exists(key): \
+    with open(key) as f: \
+        last = datetime.datetime.fromisoformat(f.read().strip()); \
+        delta = (now - last).days; \
+        should_run = delta >= 3; \
+if should_run: \
+    if random.randint(0, 23) == now.hour: \
+        run(['python', 'kwfl_bot.py']); \
+        with open(key, 'w') as f: \
+            f.write(now.isoformat())"
