@@ -1,9 +1,9 @@
-name: Tweet Every 3 Days
+name: KWFL Scheduled Tweet
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Runs every hour
-  workflow_dispatch:
+    - cron: "0 12 */3 * *"  # Every 3 days at 12:00 UTC
+  workflow_dispatch:        # Allows manual run
 
 jobs:
   tweet:
@@ -15,15 +15,15 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install tweepy python-dotenv
 
-      - name: Run scheduled_runner.py
+      - name: Run scheduled tweet
         env:
           API_KEY: ${{ secrets.API_KEY }}
           API_SECRET: ${{ secrets.API_SECRET }}
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
           ACCESS_SECRET: ${{ secrets.ACCESS_SECRET }}
-        run: python scheduled_runner.py
+        run: python kwfl_bot.py
